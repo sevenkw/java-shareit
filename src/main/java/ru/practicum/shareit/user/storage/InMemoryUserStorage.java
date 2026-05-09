@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class InMemoryUserStorage implements UserStorage {
     private final Map<Long, User> users = new LinkedHashMap<>();
     private final AtomicLong nextId = new AtomicLong(1);
+    private final HashSet<String> usersEmails = new HashSet<>();
 
     @Override
     public User create(User user) {
@@ -22,10 +23,8 @@ public class InMemoryUserStorage implements UserStorage {
             throw new ValidationException("Почта не должна быть null");
         }
 
-        for (User u : users.values()) {
-            if (Objects.equals(u.getEmail(), email)) {
-                throw new DuplicateException("Пользователь с данной почтой уже существует");
-            }
+        if (!usersEmails.add(email)) {
+            throw new DuplicateException("Пользователь с данной почтой уже существует");
         }
 
         User savedUser = new User();
@@ -48,12 +47,6 @@ public class InMemoryUserStorage implements UserStorage {
             throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
 
-        for (User u : users.values()) {
-            if (Objects.equals(u.getEmail(), user.getEmail()) && !Objects.equals(u.getId(), id)) {
-                throw new DuplicateException("Пользователь с данной почтой уже существует");
-            }
-        }
-
         User updatedUser = users.get(id);
 
         if (user.getName() != null) {
@@ -61,7 +54,16 @@ public class InMemoryUserStorage implements UserStorage {
         }
 
         if (user.getEmail() != null) {
-            updatedUser.setEmail(user.getEmail());
+            String newEmail = user.getEmail();
+            String oldEmail = updatedUser.getEmail();
+
+            if (!Objects.equals(oldEmail, newEmail) && usersEmails.contains(newEmail)) {
+                throw new DuplicateException("Пользователь с данной почтой уже существует");
+            }
+
+            usersEmails.remove(oldEmail);
+            usersEmails.add(newEmail);
+            updatedUser.setEmail(newEmail);
         }
 
         users.put(id, updatedUser);
@@ -77,6 +79,8 @@ public class InMemoryUserStorage implements UserStorage {
         if (!users.containsKey(id)) {
             throw new NotFoundException("Пользователь с id = " + id + " не найден");
         }
+
+        usersEmails.remove(users.get(id).getEmail());
 
         users.remove(id);
 
@@ -97,13 +101,7 @@ public class InMemoryUserStorage implements UserStorage {
 
     @Override
     public List<User> getAll() {
-        List<User> allUsers = new ArrayList<>();
-
-        for (var user : users.values()) {
-            allUsers.add(user);
-        }
-
-        return allUsers;
+        return new ArrayList<>(users.values());
     }
 
 }

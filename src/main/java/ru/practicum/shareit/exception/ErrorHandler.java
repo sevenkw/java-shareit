@@ -30,4 +30,14 @@ public class ErrorHandler {
         log.warn("409 CONFLICT: данные уже используются");
         return new ErrorResponse(e.getMessage());
     }
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleException(Exception e) {
+        log.warn("500 INTERNAL_SERVER_ERROR: внутренняя ошибка сервера");
+        return new ErrorResponse(e.getMessage());
+    }
 }
+
+
+
