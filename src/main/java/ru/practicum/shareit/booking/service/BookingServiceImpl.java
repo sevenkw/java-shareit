@@ -35,10 +35,10 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public Booking create(Long userId, BookingCreateRequest request) {
         User booker = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         Item item = itemRepository.findById(request.getItemId())
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + request.getItemId() + " не найдена"));
 
         if (!item.getAvailable()) {
             throw new ValidationException("Вещь должна быть доступна для бронирования");
@@ -71,7 +71,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public Booking change(Long userId, Long bookingId, boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+                .orElseThrow(() -> new NotFoundException("Бронирование с id = " + bookingId + " не найдено"));
 
         if (booking.getStatus() != BookingStatus.WAITING) {
             throw new ValidationException("Статус броинрования должен быть WAITING");
@@ -92,10 +92,11 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public Booking getBooking(Long userId, Long bookingId) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Бронирование не найдено"));
+                .orElseThrow(() -> new NotFoundException("Бронирование с id = " + bookingId + " не найдено"));
 
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new ValidationException("Доступ к просмотру есть только у создателя вещи или у автора бронирования");
@@ -106,7 +107,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<Booking> getBookings(Long userId, BookingState state) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings = new ArrayList<>();
         switch (state) {
@@ -125,7 +127,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<Booking> getOwnerBookings(Long userId, BookingState state) {
-        userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings = new ArrayList<>();
         switch (state) {
@@ -142,6 +145,5 @@ public class BookingServiceImpl implements BookingService {
         return bookings;
 
     }
-
 
 }

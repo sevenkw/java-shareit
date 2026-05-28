@@ -20,9 +20,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
@@ -44,44 +42,62 @@ public class ItemServiceImpl implements ItemService {
     public List<ItemOwnerDto> getAllByOwner(Long userId) {
 
         if (!userRepository.existsById(userId)) {
-            throw new NotFoundException("Пользователь не найден");
+            throw new NotFoundException("Пользователь с id = " + userId + " не найден");
         }
 
         LocalDateTime now = LocalDateTime.now();
 
         List<Item> items = itemRepository.findAllByOwnerId(userId);
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> itemIds = new ArrayList<>();
+        for (Item item : items) {
+            itemIds.add(item.getId());
+        }
+
+        List<Booking> futureBookings = bookingRepository.findAllByItem_IdInAndStartAfterOrderByStartAsc(itemIds, now);
+        List<Booking> pastOrCurrentBookings = bookingRepository.findAllByItem_IdInAndStartLessThanEqualOrderByStartDesc(itemIds, now);
+
+        Map<Long, BookingShortDto> nextByItemId = new HashMap<>();
+        for (Booking booking : futureBookings) {
+            Long itemId = booking.getItem().getId();
+            if (!nextByItemId.containsKey(itemId)) {
+                BookingShortDto dto = new BookingShortDto();
+                dto.setId(booking.getId());
+                dto.setBookerId(booking.getBooker().getId());
+                nextByItemId.put(itemId, dto);
+            }
+        }
+
+        Map<Long, BookingShortDto> lastByItemId = new HashMap<>();
+        for (Booking booking : pastOrCurrentBookings) {
+            Long itemId = booking.getItem().getId();
+            if (!lastByItemId.containsKey(itemId)) {
+                BookingShortDto dto = new BookingShortDto();
+                dto.setId(booking.getId());
+                dto.setBookerId(booking.getBooker().getId());
+                lastByItemId.put(itemId, dto);
+            }
+        }
+
+        Map<Long, List<CommentResponseDto>> commentsByItemId = mapCommentsByItemIds(itemIds);
         List<ItemOwnerDto> ownerDtos = new ArrayList<>();
 
         for (Item item : items) {
-
-            Optional<Booking> nextBooking = bookingRepository.findFirstByItem_IdAndStartAfterOrderByStartAsc(item.getId(), now);
-            Optional<Booking> lastBooking = bookingRepository.findFirstByItem_IdAndStartLessThanEqualOrderByStartDesc(item.getId(), now);
-
-            BookingShortDto nextShortDto = null;
-            if (nextBooking.isPresent()) {
-                nextShortDto = new BookingShortDto();
-                nextShortDto.setId(nextBooking.get().getId());
-                nextShortDto.setBookerId(nextBooking.get().getBooker().getId());
-            }
-
-            BookingShortDto lastShortDto = null;
-            if (lastBooking.isPresent()) {
-                lastShortDto = new BookingShortDto();
-                lastShortDto.setId(lastBooking.get().getId());
-                lastShortDto.setBookerId(lastBooking.get().getBooker().getId());
-            }
-
             ItemOwnerDto itemOwnerDto = new ItemOwnerDto();
+            Long itemId = item.getId();
 
-            itemOwnerDto.setId(item.getId());
+            itemOwnerDto.setId(itemId);
             itemOwnerDto.setName(item.getName());
             itemOwnerDto.setDescription(item.getDescription());
             itemOwnerDto.setAvailable(item.getAvailable());
             itemOwnerDto.setOwner(item.getOwner());
             itemOwnerDto.setRequest(item.getRequest());
-            itemOwnerDto.setNextBooking(nextShortDto);
-            itemOwnerDto.setLastBooking(lastShortDto);
-            itemOwnerDto.setComments(mapComments(item.getId()));
+            itemOwnerDto.setNextBooking(nextByItemId.get(itemId));
+            itemOwnerDto.setLastBooking(lastByItemId.get(itemId));
+            itemOwnerDto.setComments(commentsByItemId.getOrDefault(itemId, List.of()));
 
             ownerDtos.add(itemOwnerDto);
         }
@@ -92,7 +108,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public Item getItemById(Long id) {
         return itemRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + id + " не найдена"));
     }
 
     @Override
@@ -100,7 +116,7 @@ public class ItemServiceImpl implements ItemService {
     public Item createNewItem(Long userId, Item item) {
 
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         item.setOwner(owner);
 
@@ -111,10 +127,10 @@ public class ItemServiceImpl implements ItemService {
     @Transactional
     public Item updateItem(Long userId, Long itemId, Item item) {
         User owner = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
 
         Item oldItem = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена"));
 
         if (!oldItem.getOwner().getId().equals(userId)) {
             throw new ValidationException("Редактировать вещь может только ее владелец");
@@ -147,7 +163,7 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemOwnerDto getItemByIdForUser(Long userId, Long itemId) {
         Item item = itemRepository.findById(itemId)
-                .orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена"));
 
         LocalDateTime now = LocalDateTime.now();
         ItemOwnerDto itemOwnerDto = new ItemOwnerDto();
@@ -196,8 +212,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public CommentResponseDto createComment(Long userId, Long itemId, CommentRequestDto commentRequestDto) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("Пользователь не найден"));
-        Item item = itemRepository.findById(itemId).orElseThrow(() -> new NotFoundException("Вещь не найдена"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + userId + " не найден"));
+        Item item = itemRepository.findById(itemId)
+                .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена"));
 
         boolean canComment = bookingRepository
                 .existsByBooker_IdAndItem_IdAndStatusAndEndBefore(
@@ -234,6 +252,24 @@ public class ItemServiceImpl implements ItemService {
             dto.setAuthorName(comment.getAuthorId().getName());
             dto.setCreated(comment.getCreated());
             result.add(dto);
+        }
+
+        return result;
+    }
+
+    private Map<Long, List<CommentResponseDto>> mapCommentsByItemIds(List<Long> itemIds) {
+        List<Comment> comments = commentRepository.findByItem_IdInOrderByCreatedAsc(itemIds);
+        Map<Long, List<CommentResponseDto>> result = new HashMap<>();
+
+        for (Comment comment : comments) {
+            CommentResponseDto dto = new CommentResponseDto();
+            dto.setId(comment.getId());
+            dto.setText(comment.getText());
+            dto.setAuthorName(comment.getAuthorId().getName());
+            dto.setCreated(comment.getCreated());
+
+            Long itemId = comment.getItem().getId();
+            result.computeIfAbsent(itemId, key -> new ArrayList<>()).add(dto);
         }
 
         return result;

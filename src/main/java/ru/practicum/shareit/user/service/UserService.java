@@ -2,6 +2,7 @@ package ru.practicum.shareit.user.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.DuplicateException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -11,6 +12,7 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import java.util.List;
 
 @Service
+@Transactional(readOnly = true)
 public class UserService {
     private final UserRepository userRepository;
 
@@ -27,10 +29,11 @@ public class UserService {
 
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Пользователь не найден"));
+                .orElseThrow(() -> new NotFoundException("Пользователь с id = " + id + " не найден"));
     }
 
 
+    @Transactional
     public User createNewUser(User user) {
         var exist = userRepository.existsByEmail(user.getEmail());
 
@@ -42,6 +45,7 @@ public class UserService {
     }
 
 
+    @Transactional
     public User updateUser(Long id, User user) {
         if (id == null) {
             throw new ValidationException("id не должен быть null");
@@ -66,6 +70,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public void deleteUserById(Long id) {
         if (!userRepository.existsById(id)) {
             throw new NotFoundException("Пользователь с id = " + id + " не найден");
