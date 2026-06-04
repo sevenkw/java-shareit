@@ -6,7 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.practicum.shareit.item.dto.CommentRequestDto;
+import ru.practicum.shareit.item.dto.CommentResponseDto;
 import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.dto.ItemOwnerDto;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.service.ItemService;
@@ -27,21 +30,14 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemDto> getItems(@RequestHeader("X-Sharer-User-Id") @Positive Long userId) {
-        List<Item> itemList = itemService.getAllByOwner(userId);
-        List<ItemDto> itemDtoList = new ArrayList<>();
-
-        for (Item item : itemList) {
-            itemDtoList.add(ItemMapper.toItemDto(item));
-        }
-
-        return itemDtoList;
+    public List<ItemOwnerDto> getItems(@RequestHeader("X-Sharer-User-Id") @Positive Long userId) {
+        return itemService.getAllByOwner(userId);
     }
 
     @GetMapping("/{id}")
-    public ItemDto getItemById(@PathVariable @Positive Long id) {
-        Item item = itemService.getItemById(id);
-        return ItemMapper.toItemDto(item);
+    public ItemOwnerDto getItemById(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
+                                    @PathVariable("id") @Positive Long itemId) {
+        return itemService.getItemByIdForUser(userId, itemId);
     }
 
     @GetMapping("/search")
@@ -71,6 +67,14 @@ public class ItemController {
         Item useItem = ItemMapper.toItem(item);
         Item updated = itemService.updateItem(userId, itemId, useItem);
         return ItemMapper.toItemDto(updated);
+    }
+
+    @PostMapping("/{itemId}/comment")
+    public CommentResponseDto addNewComment(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
+                                            @Positive @PathVariable Long itemId,
+                                            @RequestBody @Valid CommentRequestDto commentRequestDto) {
+
+        return itemService.createComment(userId, itemId, commentRequestDto);
     }
 
 }
