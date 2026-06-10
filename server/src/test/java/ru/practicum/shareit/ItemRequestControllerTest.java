@@ -61,34 +61,6 @@ public class ItemRequestControllerTest {
     }
 
     @Test
-    void createInvalidItemRequest() throws Exception {
-        ItemRequestCreateDto requestDto = new ItemRequestCreateDto();
-        requestDto.setDescription(" ");
-
-        mvc.perform(post("/requests")
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void invalidHeader() throws Exception {
-        ItemRequestCreateDto requestDto = new ItemRequestCreateDto();
-        requestDto.setDescription("newItemRequest");
-
-        mvc.perform(post("/requests")
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void getItemRequestUser() throws Exception {
 
         ItemRequestDto firstDto = new ItemRequestDto();
@@ -159,17 +131,6 @@ public class ItemRequestControllerTest {
     }
 
     @Test
-    void getItemRequestInvalidHeader() throws Exception {
-
-        mvc.perform(get("/requests")
-                        .header("X-Sharer-User-Id", -1L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void getItemRequestByRequestIdAndUserId() throws Exception {
         ItemRequestResponseDto responseDto = new ItemRequestResponseDto();
         responseDto.setId(1L);
@@ -192,27 +153,6 @@ public class ItemRequestControllerTest {
                 .getItemRequestByRequestIdAndUserId(1L, 1L);
 
     }
-
-    @Test
-    void getItemRequestByIdInvalidRequestId() throws Exception {
-        mvc.perform(get("/requests/{requestId}", 0L)
-                        .header("X-Sharer-User-Id", 1L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void getItemRequestByIdAndUserIdInvalidRequestId() throws Exception {
-        mvc.perform(get("/requests/{requestId}", 1L)
-                        .header("X-Sharer-User-Id", -10L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
 
     @Test
     void getAllRequestsSuccess() throws Exception {
@@ -269,13 +209,4 @@ public class ItemRequestControllerTest {
         verify(service, times(1)).getAllItemRequests(1L);
     }
 
-    @Test
-    void getAllRequestsInvalidHeader() throws Exception {
-        mvc.perform(get("/requests/all")
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
 }

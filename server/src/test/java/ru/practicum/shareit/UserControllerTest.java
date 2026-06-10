@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,7 +28,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(UserController.class)
-
 public class UserControllerTest {
 
     @Autowired
@@ -95,15 +93,6 @@ public class UserControllerTest {
     }
 
     @Test
-    void getUserByIdInvalidId() throws Exception {
-        mvc.perform(get("/users/{id}", 0L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void createUser() throws Exception {
         UserDto requestDto = new UserDto();
         requestDto.setName("Yaroslav");
@@ -123,20 +112,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.id", is(1)))
                 .andExpect(jsonPath("$.name", is("Yaroslav")))
                 .andExpect(jsonPath("$.email", is("email@yandex.ru")));
-    }
-
-    @Test
-    void createUserInvalidEmail() throws Exception {
-        UserDto requestDto = new UserDto();
-        requestDto.setName("Yaroslav");
-        requestDto.setEmail("invalid-email");
-
-        mvc.perform(post("/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     @Test
@@ -183,32 +158,6 @@ public class UserControllerTest {
     }
 
     @Test
-    void updateUserInvalidEmail() throws Exception {
-        UserDto requestDto = new UserDto();
-        requestDto.setEmail("invalid-email");
-
-        mvc.perform(patch("/users/{id}", 1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void updateUserInvalidId() throws Exception {
-        UserDto requestDto = new UserDto();
-        requestDto.setName("Updated");
-
-        mvc.perform(patch("/users/{id}", -1L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void deleteUser() throws Exception {
         mvc.perform(delete("/users/{id}", 1L)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -217,12 +166,4 @@ public class UserControllerTest {
         verify(service).deleteUserById(1L);
     }
 
-    @Test
-    void deleteUserInvalidId() throws Exception {
-        mvc.perform(delete("/users/{id}", 0L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
 }

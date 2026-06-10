@@ -1,10 +1,7 @@
 package ru.practicum.shareit.item.controller;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.item.dto.CommentRequestDto;
 import ru.practicum.shareit.item.dto.CommentResponseDto;
@@ -20,7 +17,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/items")
-@Validated
 public class ItemController {
     private final ItemService itemService;
 
@@ -30,13 +26,13 @@ public class ItemController {
     }
 
     @GetMapping
-    public List<ItemOwnerDto> getItems(@RequestHeader("X-Sharer-User-Id") @Positive Long userId) {
+    public List<ItemOwnerDto> getItems(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return itemService.getAllByOwner(userId);
     }
 
     @GetMapping("/{id}")
-    public ItemOwnerDto getItemById(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
-                                    @PathVariable("id") @Positive Long itemId) {
+    public ItemOwnerDto getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                    @PathVariable("id") Long itemId) {
         return itemService.getItemByIdForUser(userId, itemId);
     }
 
@@ -54,14 +50,14 @@ public class ItemController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ItemDto createItem(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
-                              @Valid @RequestBody ItemDto itemDto) {
+    public ItemDto createItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+                              @RequestBody ItemDto itemDto) {
         return itemService.createNewItem(userId, itemDto);
     }
 
     @PatchMapping("/{id}")
-    public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
-                              @Positive @PathVariable("id") Long itemId,
+    public ItemDto updateItem(@RequestHeader("X-Sharer-User-Id") Long userId,
+                              @PathVariable("id") Long itemId,
                               @RequestBody ItemDto item) {
         Item useItem = ItemMapper.toItem(item);
         Item updated = itemService.updateItem(userId, itemId, useItem);
@@ -69,9 +65,9 @@ public class ItemController {
     }
 
     @PostMapping("/{itemId}/comment")
-    public CommentResponseDto addNewComment(@RequestHeader("X-Sharer-User-Id") @Positive Long userId,
-                                            @Positive @PathVariable Long itemId,
-                                            @RequestBody @Valid CommentRequestDto commentRequestDto) {
+    public CommentResponseDto addNewComment(@RequestHeader("X-Sharer-User-Id") Long userId,
+                                            @PathVariable Long itemId,
+                                            @RequestBody CommentRequestDto commentRequestDto) {
 
         return itemService.createComment(userId, itemId, commentRequestDto);
     }

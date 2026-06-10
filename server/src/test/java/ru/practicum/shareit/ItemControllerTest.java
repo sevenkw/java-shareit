@@ -27,7 +27,6 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -139,67 +138,6 @@ public class ItemControllerTest {
         verify(service).createNewItem(eq(2L), any(ItemDto.class));
     }
 
-    @Test
-    void createNewItemWithoutName() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setDescription("description");
-        requestDto.setAvailable(true);
-
-        mvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createNewItemWithBlankDescription() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setName("test");
-        requestDto.setDescription(" ");
-        requestDto.setAvailable(true);
-
-        mvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createNewItemWithoutAvailable() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setName("test");
-        requestDto.setDescription("description");
-
-        mvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createNewItemInvalidHeader() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setName("test");
-        requestDto.setDescription("description");
-        requestDto.setAvailable(true);
-
-        mvc.perform(post("/items")
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
 
     @Test
     void getItemsSuccess() throws Exception {
@@ -237,15 +175,6 @@ public class ItemControllerTest {
         verify(service).getAllByOwner(2L);
     }
 
-    @Test
-    void getItemsInvalidHeader() throws Exception {
-        mvc.perform(get("/items")
-                        .header("X-Sharer-User-Id", -1L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
 
     @Test
     void getItemByIdSuccess() throws Exception {
@@ -265,26 +194,6 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.comments", hasSize(1)));
 
         verify(service).getItemByIdForUser(2L, 1L);
-    }
-
-    @Test
-    void getItemByIdInvalidItemId() throws Exception {
-        mvc.perform(get("/items/{id}", 0L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void getItemByIdInvalidHeader() throws Exception {
-        mvc.perform(get("/items/{id}", 1L)
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     @Test
@@ -359,33 +268,6 @@ public class ItemControllerTest {
         verify(service).updateItem(eq(2L), eq(1L), any(Item.class));
     }
 
-    @Test
-    void updateItemInvalidItemId() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setName("updated");
-
-        mvc.perform(patch("/items/{id}", 0L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void updateItemInvalidHeader() throws Exception {
-        ItemDto requestDto = new ItemDto();
-        requestDto.setName("updated");
-
-        mvc.perform(patch("/items/{id}", 1L)
-                        .header("X-Sharer-User-Id", -2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
 
     @Test
     void createCommentSuccess() throws Exception {
@@ -410,48 +292,6 @@ public class ItemControllerTest {
                 .andExpect(jsonPath("$.authorName", is("booker")));
 
         verify(service).createComment(eq(2L), eq(1L), any(CommentRequestDto.class));
-    }
-
-    @Test
-    void createCommentBlankText() throws Exception {
-        CommentRequestDto requestDto = new CommentRequestDto();
-        requestDto.setText(" ");
-
-        mvc.perform(post("/items/{itemId}/comment", 1L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createCommentInvalidItemId() throws Exception {
-        CommentRequestDto requestDto = new CommentRequestDto();
-        requestDto.setText("great item");
-
-        mvc.perform(post("/items/{itemId}/comment", 0L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createCommentInvalidHeader() throws Exception {
-        CommentRequestDto requestDto = new CommentRequestDto();
-        requestDto.setText("great item");
-
-        mvc.perform(post("/items/{itemId}/comment", 1L)
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(requestDto)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     private User createUser(Long id, String name) {

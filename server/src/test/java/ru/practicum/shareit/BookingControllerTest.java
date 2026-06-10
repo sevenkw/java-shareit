@@ -24,7 +24,6 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -69,67 +68,6 @@ public class BookingControllerTest {
     }
 
     @Test
-    void createBookingWithoutItemIdShouldReturnBadRequest() throws Exception {
-        BookingCreateRequest request = new BookingCreateRequest();
-        request.setStart(LocalDateTime.now().plusDays(1));
-        request.setEnd(LocalDateTime.now().plusDays(2));
-
-        mvc.perform(post("/bookings")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createBookingWithoutStartShouldReturnBadRequest() throws Exception {
-        BookingCreateRequest request = new BookingCreateRequest();
-        request.setItemId(1L);
-        request.setEnd(LocalDateTime.now().plusDays(2));
-
-        mvc.perform(post("/bookings")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createBookingWithoutEndShouldReturnBadRequest() throws Exception {
-        BookingCreateRequest request = new BookingCreateRequest();
-        request.setItemId(1L);
-        request.setStart(LocalDateTime.now().plusDays(1));
-
-        mvc.perform(post("/bookings")
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void createBookingInvalidHeaderShouldReturnBadRequest() throws Exception {
-        BookingCreateRequest request = new BookingCreateRequest();
-        request.setItemId(1L);
-        request.setStart(LocalDateTime.now().plusDays(1));
-        request.setEnd(LocalDateTime.now().plusDays(2));
-
-        mvc.perform(post("/bookings")
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(mapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void changeBookingShouldReturnUpdatedBooking() throws Exception {
         Booking booking = createBooking(1L, 2L, 3L, BookingStatus.APPROVED);
 
@@ -144,28 +82,6 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$.status", is("APPROVED")));
 
         verify(service).change(2L, 1L, true);
-    }
-
-    @Test
-    void changeBookingInvalidHeaderShouldReturnBadRequest() throws Exception {
-        mvc.perform(patch("/bookings/{bookingId}", 1L)
-                        .header("X-Sharer-User-Id", -1L)
-                        .param("approved", "true")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void changeBookingInvalidBookingIdShouldReturnBadRequest() throws Exception {
-        mvc.perform(patch("/bookings/{bookingId}", 0L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .param("approved", "true")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     @Test
@@ -184,26 +100,6 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$.status", is("WAITING")));
 
         verify(service).getBooking(2L, 1L);
-    }
-
-    @Test
-    void getBookingInvalidHeaderShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings/{bookingId}", 1L)
-                        .header("X-Sharer-User-Id", 0L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void getBookingInvalidBookingIdShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings/{bookingId}", -1L)
-                        .header("X-Sharer-User-Id", 2L)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     @Test
@@ -255,28 +151,6 @@ public class BookingControllerTest {
     }
 
     @Test
-    void getBookingsInvalidHeaderShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", -1L)
-                        .param("state", "ALL")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void getBookingsInvalidStateShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings")
-                        .header("X-Sharer-User-Id", 2L)
-                        .param("state", "INVALID")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
     void getOwnerBookingsShouldReturnBookingsList() throws Exception {
         Booking first = createBooking(1L, 2L, 3L, BookingStatus.WAITING);
         Booking second = createBooking(2L, 4L, 5L, BookingStatus.REJECTED);
@@ -322,28 +196,6 @@ public class BookingControllerTest {
                 .andExpect(jsonPath("$", hasSize(0)));
 
         verify(service).getOwnerBookings(2L, BookingState.ALL);
-    }
-
-    @Test
-    void getOwnerBookingsInvalidHeaderShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings/owner")
-                        .header("X-Sharer-User-Id", 0L)
-                        .param("state", "ALL")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
-    }
-
-    @Test
-    void getOwnerBookingsInvalidStateShouldReturnBadRequest() throws Exception {
-        mvc.perform(get("/bookings/owner")
-                        .header("X-Sharer-User-Id", 2L)
-                        .param("state", "UNKNOWN")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(service);
     }
 
     private Booking createBooking(Long id, Long itemId, Long bookerId, BookingStatus status) {

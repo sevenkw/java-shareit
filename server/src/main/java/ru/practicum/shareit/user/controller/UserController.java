@@ -1,10 +1,7 @@
 package ru.practicum.shareit.user.controller;
 
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
@@ -16,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping(path = "/users")
-@Validated
 public class UserController {
     private final UserService userService;
 
@@ -38,21 +34,21 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public UserDto getUserById(@PathVariable @Positive Long id) {
+    public UserDto getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
         return UserMapper.toUserDto(user);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto createUser(@Valid @RequestBody UserDto userDto) {
+    public UserDto createUser(@RequestBody UserDto userDto) {
         User user = UserMapper.toUser(userDto);
         User created = userService.createNewUser(user);
         return UserMapper.toUserDto(created);
     }
 
     @PatchMapping("/{id}")
-    public UserDto updateUser(@PathVariable @Positive Long id, @Valid @RequestBody UserDto userDto) {
+    public UserDto updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         User user = UserMapper.toUser(userDto);
         User updated = userService.updateUser(id, user);
         return UserMapper.toUserDto(updated);
@@ -60,7 +56,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@PathVariable @Positive Long id) {
+    public void deleteUser(@PathVariable Long id) {
         userService.deleteUserById(id);
     }
 }
